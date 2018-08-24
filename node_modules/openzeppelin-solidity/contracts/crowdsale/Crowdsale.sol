@@ -36,6 +36,9 @@ contract Crowdsale {
   // Amount of wei raised
   uint256 public weiRaised;
 
+  // Amount tokens Sold
+  uint256 public tokensSold;
+  
   /**
    * Event for token purchase logging
    * @param purchaser who paid for the tokens
@@ -83,13 +86,15 @@ contract Crowdsale {
   function buyTokens(address _beneficiary) public payable {
 
     uint256 weiAmount = msg.value;
-    _preValidatePurchase(_beneficiary, weiAmount);
 
     // calculate token amount to be created
     uint256 tokens = _getTokenAmount(weiAmount);
 
+    _preValidatePurchase(_beneficiary, weiAmount, tokens);
+
     // update state
     weiRaised = weiRaised.add(weiAmount);
+    tokensSold = tokensSold.add(tokens);
 
     _processPurchase(_beneficiary, tokens);
     emit TokenPurchase(
@@ -99,10 +104,10 @@ contract Crowdsale {
       tokens
     );
 
-    _updatePurchasingState(_beneficiary, weiAmount);
+    _updatePurchasingState(_beneficiary, weiAmount, tokens);
 
     _forwardFunds();
-    _postValidatePurchase(_beneficiary, weiAmount);
+    _postValidatePurchase(_beneficiary, weiAmount, tokens);
   }
 
   // -----------------------------------------
@@ -119,7 +124,8 @@ contract Crowdsale {
    */
   function _preValidatePurchase(
     address _beneficiary,
-    uint256 _weiAmount
+    uint256 _weiAmount,
+    uint256 _tokenAmount
   )
     internal
   {
@@ -134,7 +140,8 @@ contract Crowdsale {
    */
   function _postValidatePurchase(
     address _beneficiary,
-    uint256 _weiAmount
+    uint256 _weiAmount,
+    uint256 _tokenAmount
   )
     internal
   {
@@ -176,7 +183,8 @@ contract Crowdsale {
    */
   function _updatePurchasingState(
     address _beneficiary,
-    uint256 _weiAmount
+    uint256 _weiAmount,
+    uint256 _tokenAmount
   )
     internal
   {

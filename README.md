@@ -1,1 +1,1 @@
-# smart_contracts
+# FoodNation.io - Smart Contracts

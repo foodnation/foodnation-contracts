@@ -28,10 +28,10 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         uint256 tokensSold;
 
         // Maximum amount of Tokens accepted in the current Milestone.
-        uint256 tokenCap;
+        uint256 cap;
 
         // How many tokens per wei you will get after this milestone has been passed
-        uint256 rate;
+        uint256 price;
 
         // State variable that finalize Milestone
         bool isFinalized;
@@ -52,30 +52,32 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     /// @dev Contruction, creating a list of milestones
     /// @param _openingTime Crowdsale opening time
     /// @param _closingTime Crowdsale closing time
-    /// @param _time uint[] milestones start time 
-    /// @param _tokenCap uint[] milestones tokenCap 
-    /// @param _rate uint[] milestones rate 
+    /// @param _milestoneStartTime uint[] milestones start time 
+    /// @param _milestoneCap uint[] milestones cap 
+    /// @param _milestonePrice uint[] milestones price 
     constructor(        
         uint256 _openingTime,
         uint256 _closingTime, 
-        uint256[] _time, 
-        uint256[] _tokenCap, 
-        uint256[] _rate) public {
+        uint256[] _milestoneStartTime, 
+        uint256[] _milestoneCap, 
+        uint256[] _milestonePrice) 
+        TimedCrowdsale(_openingTime, _closingTime)
+        public {
         // Need to have tuples, length check
-        require(_time.length > 0, "Parameters length must be non-zero");
-        require(_time.length == _tokenCap.length && _tokenCap.length == _rate.length, "Parameters must have the same length");
-        require(_time[0] == _openingTime, "First Milestone should start at same time as global Crowdsale");
-        require(_time[_time.length-1] < _closingTime, "Last Milestone should start before global Crowdsale ends");
+        require(_milestoneStartTime.length > 0, "Parameters length must be non-zero");
+        require(_milestoneStartTime.length == _milestoneCap.length && _milestoneCap.length == _milestonePrice.length, "Parameters must have the same length");
+        require(_milestoneStartTime[0] == _openingTime, "First Milestone should start at same time as global Crowdsale");
+        require(_milestoneStartTime[_milestoneStartTime.length-1] < _closingTime, "Last Milestone should start before global Crowdsale ends");
 
-        for (uint iterator = 0; iterator < _time.length; iterator++) {
-            if (_time[iterator] != 0) {
-                assert(_time[iterator] > milestones[milestoneCount-1].startTime);
+        for (uint iterator = 0; iterator < _milestoneStartTime.length; iterator++) {
+            if (_milestoneStartTime[iterator] != 0) {
+                assert(_milestoneStartTime[iterator] > milestones[milestoneCount-1].startTime);
                 milestones[milestoneCount] = Milestone({
                     index: milestoneCount,
-                    startTime: _time[iterator],
+                    startTime: _milestoneStartTime[iterator],
                     tokensSold: 0,
-                    tokenCap: _tokenCap[iterator],
-                    rate: _rate[iterator],
+                    cap: _milestoneCap[iterator],
+                    price: _milestonePrice[iterator],
                     isFinalized: false
                 });
                 milestoneCount++;
@@ -83,10 +85,26 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         }
     }
 
-    /// @dev Iterate through milestones. You reach end of milestones when rate = 0
-    /// @return tuple (time, rate)
+    /// @dev Iterate through milestones. You reach end of milestones when price = 0
+    /// @return tuple (time, price)
     function getMilestoneTimeAndRate(uint256 n) public view returns (uint, uint) {
-        return (milestones[n].startTime, milestones[n].rate);
+        return (milestones[n].startTime, milestones[n].price);
+    }
+
+    /**
+    * @dev Checks whether the cap of a milestone has been reached.
+    * @return Whether the cap was reached
+    */
+    function capReached(uint256 n) public view returns (bool) {
+        return milestones[n].tokensSold >= milestones[n].cap;
+    }
+
+    /**
+    * @dev Checks amount of tokens sold in milestone.
+    * @return Amount of tokens sold in milestone
+    */
+    function getTokensSold(uint256 n) public view returns (uint256) {
+        return milestones[n].tokensSold;
     }
 
     function getFirstMilestone() private view returns (Milestone) {
@@ -122,10 +140,10 @@ contract MilestoneCrowdsale is TimedCrowdsale {
             }
         }
 
-        // For the next code, you may ask why not assert if last milestone surpass tokenCap...
+        // For the next code, you may ask why not assert if last milestone surpass cap...
         // Because if its last and it is capped we would like to finish not sell any more tokens 
         // Check if the current milestone has reached it's cap
-        if (milestones[index].tokensSold > milestones[index].tokenCap) {
+        if (milestones[index].tokensSold > milestones[index].cap) {
             index = index + 1;
         }
 
@@ -136,39 +154,43 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     * @dev Extend parent behavior requiring purchase to respect the funding cap from the currentMilestone.
     * @param _beneficiary Token purchaser
     * @param _weiAmount Amount of wei contributed
+    * @param _tokenAmount Amount of token purchased
+    
     */
     function _preValidatePurchase(
         address _beneficiary,
-        uint256 _weiAmount
+        uint256 _weiAmount,
+        uint256 _tokenAmount
     )
         internal
     {
         super._preValidatePurchase(_beneficiary, _weiAmount);
         uint256 tokens = _getTokenAmount(_weiAmount);
-        require(milestones[currentMilestoneIdx].tokensSold.add(tokens) <= milestones[currentMilestoneIdx].tokenCap, "The current purchase exceeds the Hard Cap of current Milestone. Please, try again with a smaller value...");
+        require(milestones[currentMilestoneIdx].tokensSold.add(tokens) <= milestones[currentMilestoneIdx].cap, "The current purchase exceeds the Hard Cap of current Milestone. Please, try again...");
     }
 
     /**
     * @dev Extend parent behavior updating contract variables
     * @param _beneficiary Address performing the token purchase
     * @param _weiAmount Value in wei involved in the purchase
+    * @param _tokenAmount Amount of token purchased
     */
     function _postValidatePurchase(
         address _beneficiary,
-        uint256 _weiAmount
+        uint256 _weiAmount,
+        uint256 _tokenAmount
     )
         internal
     {
         super._postValidatePurchase(_beneficiary, _weiAmount);
-        uint256 tokens = _getTokenAmount(_weiAmount);
         milestones[currentMilestoneIdx].tokensSold = milestones[currentMilestoneIdx].tokensSold.add(tokens);
         currentMilestoneIdx = getNextMilestoneIndex();
     }
 
-    /// @dev Get the current rate.
-    /// @return The current rate or 0 if we are outside milestone period
-    function getCurrentRate() internal view returns (uint result) {
-        return milestones[getCurrentMilestoneIndex()].rate;
+    /// @dev Get the current price.
+    /// @return The current price or 0 if we are outside milestone period
+    function getCurrentPrice() internal view returns (uint result) {
+        return milestones[getCurrentMilestoneIndex()].price;
     }
 
     /**

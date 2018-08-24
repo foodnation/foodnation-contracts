@@ -68,11 +68,12 @@ contract IndividuallyCappedCrowdsale is Ownable, Crowdsale {
    */
   function _preValidatePurchase(
     address _beneficiary,
-    uint256 _weiAmount
+    uint256 _weiAmount,
+    uint256 _tokenAmount
   )
     internal
   {
-    super._preValidatePurchase(_beneficiary, _weiAmount);
+    super._preValidatePurchase(_beneficiary, _weiAmount, _tokenAmount);
     require(contributions[_beneficiary].add(_weiAmount) <= caps[_beneficiary]);
   }
 
@@ -83,11 +84,12 @@ contract IndividuallyCappedCrowdsale is Ownable, Crowdsale {
    */
   function _updatePurchasingState(
     address _beneficiary,
-    uint256 _weiAmount
+    uint256 _weiAmount,
+    uint256 _tokenAmount
   )
     internal
   {
-    super._updatePurchasingState(_beneficiary, _weiAmount);
+    super._updatePurchasingState(_beneficiary, _weiAmount, _tokenAmount);
     contributions[_beneficiary] = contributions[_beneficiary].add(_weiAmount);
   }
 

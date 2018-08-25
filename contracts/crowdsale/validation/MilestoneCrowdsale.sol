@@ -1,6 +1,6 @@
 pragma solidity ^0.4.22;
 
-import "openzeppelin-solidity/contracts/crowdsale/validation/TimedCrowdsale.sol";
+import "./TimedCrowdsale.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 /**
@@ -31,16 +31,15 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         uint256 cap;
 
         // How many tokens per wei you will get after this milestone has been passed
-        uint256 price;
-
-        // State variable that finalize Milestone
-        bool isFinalized;
+        uint256 rate;
 
     }
 
-    /// Store milestones in a fixed array, so that it can be seen in a blockchain explorer
-    /// Milestone 0 is always (0, 0)
-    /// (TODO: change this when we confirm dynamic arrays are explorable)
+    /**
+    * Store milestones in a fixed array, so that it can be seen in a blockchain explorer
+    * Milestone 0 is always (0, 0)
+    * (TODO: change this when we confirm dynamic arrays are explorable)
+    */
     Milestone[10] public milestones;
 
     // How many active milestones have been created
@@ -49,23 +48,25 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     // Index of the current milestone
     uint256 public currentMilestoneIdx = 0;
 
-    /// @dev Contruction, creating a list of milestones
-    /// @param _openingTime Crowdsale opening time
-    /// @param _closingTime Crowdsale closing time
-    /// @param _milestoneStartTime uint[] milestones start time 
-    /// @param _milestoneCap uint[] milestones cap 
-    /// @param _milestonePrice uint[] milestones price 
+    /**
+    * @dev Contruction, creating a list of milestones
+    * @param _openingTime Crowdsale opening time
+    * @param _closingTime Crowdsale closing time
+    * @param _milestoneStartTime uint[] milestones start time 
+    * @param _milestoneCap uint[] milestones cap 
+    * @param _milestoneRate uint[] milestones price 
+    */
     constructor(        
         uint256 _openingTime,
         uint256 _closingTime, 
         uint256[] _milestoneStartTime, 
         uint256[] _milestoneCap, 
-        uint256[] _milestonePrice) 
+        uint256[] _milestoneRate) 
         TimedCrowdsale(_openingTime, _closingTime)
         public {
         // Need to have tuples, length check
         require(_milestoneStartTime.length > 0, "Parameters length must be non-zero");
-        require(_milestoneStartTime.length == _milestoneCap.length && _milestoneCap.length == _milestonePrice.length, "Parameters must have the same length");
+        require(_milestoneStartTime.length == _milestoneCap.length && _milestoneCap.length == _milestoneRate.length, "Parameters must have the same length");
         require(_milestoneStartTime[0] == _openingTime, "First Milestone should start at same time as global Crowdsale");
         require(_milestoneStartTime[_milestoneStartTime.length-1] < _closingTime, "Last Milestone should start before global Crowdsale ends");
 
@@ -77,18 +78,19 @@ contract MilestoneCrowdsale is TimedCrowdsale {
                     startTime: _milestoneStartTime[iterator],
                     tokensSold: 0,
                     cap: _milestoneCap[iterator],
-                    price: _milestonePrice[iterator],
-                    isFinalized: false
+                    rate: _milestoneRate[iterator]
                 });
                 milestoneCount++;
             }
         }
     }
 
-    /// @dev Iterate through milestones. You reach end of milestones when price = 0
-    /// @return tuple (time, price)
-    function getMilestoneTimeAndRate(uint256 n) public view returns (uint, uint) {
-        return (milestones[n].startTime, milestones[n].price);
+    /**
+    * @dev Iterate through milestones. You reach end of milestones when rate = 0
+    * @return tuple (time, rate)
+    */
+    function getMilestoneTimeAndRate(uint256 n) public view returns (uint256, uint256) {
+        return (milestones[n].startTime, milestones[n].rate);
     }
 
     /**
@@ -123,9 +125,11 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         return getLastMilestone().startTime;
     }
 
-    /// @dev Get the current milestone or bail out if we are not in the milestone periods.
-    /// @return {[type]} [description]
-    function getNextMilestoneIndex() internal view onlyWhileOpen returns  (uint256) {
+    /**
+    * @dev Get the current milestone or bail out if we are not in the milestone periods.
+    * @return {[type]} [description]
+    */
+    function getCurrentMilestoneIndex() internal view onlyWhileOpen returns  (uint256) {
         uint256 index;
 
         // Found the current milestone by evaluating time. 
@@ -150,7 +154,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         return index;
     }
 
-      /**
+    /**
     * @dev Extend parent behavior requiring purchase to respect the funding cap from the currentMilestone.
     * @param _beneficiary Token purchaser
     * @param _weiAmount Amount of wei contributed
@@ -165,8 +169,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         internal
     {
         super._preValidatePurchase(_beneficiary, _weiAmount);
-        uint256 tokens = _getTokenAmount(_weiAmount);
-        require(milestones[currentMilestoneIdx].tokensSold.add(tokens) <= milestones[currentMilestoneIdx].cap, "The current purchase exceeds the Hard Cap of current Milestone. Please, try again...");
+        require(milestones[currentMilestoneIdx].tokensSold.add(_tokenAmount) <= milestones[currentMilestoneIdx].cap, "The current purchase exceeds the Hard Cap of current Milestone.");
     }
 
     /**
@@ -184,13 +187,15 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     {
         super._postValidatePurchase(_beneficiary, _weiAmount);
         milestones[currentMilestoneIdx].tokensSold = milestones[currentMilestoneIdx].tokensSold.add(tokens);
-        currentMilestoneIdx = getNextMilestoneIndex();
+        currentMilestoneIdx = getCurrentMilestoneIndex();
     }
 
-    /// @dev Get the current price.
-    /// @return The current price or 0 if we are outside milestone period
-    function getCurrentPrice() internal view returns (uint result) {
-        return milestones[getCurrentMilestoneIndex()].price;
+    /**
+    * @dev Get the current price.
+    * @return The current price or 0 if we are outside milestone period
+    */
+    function getCurrentRate() internal view returns (uint result) {
+        return milestones[currentMilestoneIdx()].rate;
     }
 
     /**
@@ -201,7 +206,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     function _getTokenAmount(uint256 _weiAmount)
         internal view returns (uint256)
     {
-        return _weiAmount.mul(rate);
+        return _weiAmount.mul(getCurrentRate());
     }
 
 }

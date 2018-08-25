@@ -1,12 +1,15 @@
 pragma solidity 0.4.24;
 
+import "openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/CappedToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/PausableToken.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./support/UpgradeableToken.sol";
 
-contract FoodNationToken is CappedToken, DetailedERC20, PausableToken, UpgradeableToken {
+import "./upgrade/UpgradeableToken.sol";
+
+contract FoodNationToken is StandardToken, MintableToken, CappedToken, DetailedERC20, PausableToken, UpgradeableToken {
     
     using SafeMath for uint256;
 

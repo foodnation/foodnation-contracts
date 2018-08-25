@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
-import "../../math/SafeMath.sol";
-import "../../ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../validation/TimedCrowdsale.sol";
 
 
@@ -11,32 +11,32 @@ import "../validation/TimedCrowdsale.sol";
  * after finishing.
  */
 contract FinalizableCrowdsale is Ownable, TimedCrowdsale {
-  using SafeMath for uint256;
+    using SafeMath for uint256;
 
-  bool public isFinalized = false;
+    bool public isFinalized = false;
 
-  event Finalized();
+    event Finalized();
 
-  /**
-   * @dev Must be called after crowdsale ends, to do some extra finalization
-   * work. Calls the contract's finalization function.
-   */
-  function finalize() public onlyOwner {
-    require(!isFinalized);
-    require(hasClosed());
+    /**
+    * @dev Must be called after crowdsale ends, to do some extra finalization
+    * work. Calls the contract's finalization function.
+    */
+    function finalize() public onlyOwner {
+        require(!isFinalized);
+        require(hasClosed());
 
-    finalization();
-    emit Finalized();
+        finalization();
+        emit Finalized();
 
-    isFinalized = true;
-  }
+        isFinalized = true;
+    }
 
-  /**
-   * @dev Can be overridden to add finalization logic. The overriding function
-   * should call super.finalization() to ensure the chain of finalization is
-   * executed entirely.
-   */
-  function finalization() internal {
-  }
+    /**
+    * @dev Can be overridden to add finalization logic. The overriding function
+    * should call super.finalization() to ensure the chain of finalization is
+    * executed entirely.
+    */
+    function finalization() internal {
+    }
 
 }

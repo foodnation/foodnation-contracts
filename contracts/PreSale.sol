@@ -1,18 +1,17 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "openzeppelin-solidity/contracts/crowdsale/Crowdsale.sol";
-import "openzeppelin-solidity/contracts/crowdsale/distribution/RefundableCrowdsale.sol";
-import "openzeppelin-solidity/contracts/crowdsale/emission/AllowanceCrowdsale.sol";
-import "openzeppelin-solidity/contracts/crowdsale/validation/CappedCrowdsaleToken.sol";
-import "openzeppelin-solidity/contracts/crowdsale/validation/IndividuallyCappedCrowdsaleToken.sol";
-import "./ETHUSDPricing.sol";
-import "./support/MilestoneCrowdsale.sol";
+
+import "./crowdsale/Crowdsale.sol";
+import "./crowdsale/emission/AllowanceCrowdsale.sol";
+import "./crowdsale/distribution/RefundableCrowdsale.sol";
+import "./crowdsale/validation/CappedCrowdsaleToken.sol";
+import "./crowdsale/validation/MinimumPurchaseCrowdsale.sol";
+import "./crowdsale/validation/MilestoneCrowdsale.sol";
+import "./crowdsale/price/USDPriceCrowdsale.sol";
 
 
-contract PreSale is Crowdsale, AllowanceCrowdsale, RefundableCrowdsale, CappedCrowdsaleToken, IndividuallyCappedCrowdsaleToken, MilestoneCrowdsale {
-
-    ETHUSDPricing public ETHUSD;
+contract PreSale is Crowdsale, AllowanceCrowdsale, RefundableCrowdsale, CappedCrowdsaleToken, MinimumPurchaseCrowdsale, MilestoneCrowdsale, USDPriceCrowdsale {
 
     uint256 public tokensSold;
 
@@ -43,26 +42,6 @@ contract PreSale is Crowdsale, AllowanceCrowdsale, RefundableCrowdsale, CappedCr
     }
 
     /**
-    * @dev Overrides parent method calculating the goal in tokens. 
-    * @return Whether funding goal was reached
-    */
-    function goalReached() public view returns (bool) {
-        return tokensSold >= goal;
-    }
-
-    /**
-    * @dev Overrides parent method taking into account variable rate.
-    * @param _weiAmount The value in wei to be converted into tokens
-    * @return The number of tokens _weiAmount wei will buy at present time
-    */
-    function _getTokenAmount(uint256 _weiAmount)
-        internal view returns (uint256)
-    {
-        uint256 currentRate = getCurrentRate();
-        return currentRate.mul(_weiAmount);
-    }
-
-    /**
     * @dev Override to extend the way in which ether is converted to tokens.
     * @param _weiAmount Value in wei to be converted into tokens
     * @return Number of tokens that can be purchased with the specified _weiAmount
@@ -70,6 +49,6 @@ contract PreSale is Crowdsale, AllowanceCrowdsale, RefundableCrowdsale, CappedCr
     function _getTokenAmount(uint256 _weiAmount)
         internal view returns (uint256)
     {
-        return _weiAmount.mul(rate);
+        return _getPrice(_weiAmount).div(getCurrentRate());
     }
 }

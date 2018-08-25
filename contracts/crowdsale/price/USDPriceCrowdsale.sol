@@ -4,12 +4,12 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 import "../Crowdsale.sol";
 /**
-* @title USDPricingCrowdsale
+* @title USDPricerowdsale
 * @dev Extension of Crowdsale contract that calculates the price of tokens in USD cents.
 * Note that this contracts needs to be updated
 * Once this contract is used, the rate of crowdsale needs to be in USD cents
 */
-contract USDPricingCrowdsale is Crowdsale {
+contract USDPriceCrowdsale is Ownable, Crowdsale {
 
     // PRICE of 1 ETHER in USD in cents
     // So, if price is: $271.90, the value in variable will be: 27190

@@ -13,8 +13,6 @@ import "./crowdsale/price/USDPriceCrowdsale.sol";
 
 contract PreSale is Crowdsale, AllowanceCrowdsale, RefundableCrowdsale, CappedCrowdsaleToken, MinimumPurchaseCrowdsale, MilestoneCrowdsale, USDPriceCrowdsale {
 
-    uint256 public tokensSold;
-
     constructor(
         uint256 _rate,
         address _wallet,
@@ -26,19 +24,17 @@ contract PreSale is Crowdsale, AllowanceCrowdsale, RefundableCrowdsale, CappedCr
         uint256[] _milestoneRate,
         uint256 _goal,
         uint256 _cap,
-        uint256 _individualCap,
-        address _tokenWallet,
-        address _pricing
+        uint256 _minimumContribution,
+        address _tokenWallet
     )
         Crowdsale(_rate, _wallet, _token)
         AllowanceCrowdsale(_tokenWallet)
         RefundableCrowdsale(_goal)
         CappedCrowdsaleToken(_cap)
-        IndividuallyCappedCrowdsaleToken(_individualCap)
+        MinimumPurchaseCrowdsale(_minimumContribution)
         MilestoneCrowdsale(_openingTime, _closingTime, _milestoneStartTime, _milestoneCap, _milestoneRate)
         public
     {
-        ETHUSD = ETHUSDPricing(_pricing);
     }
 
     /**

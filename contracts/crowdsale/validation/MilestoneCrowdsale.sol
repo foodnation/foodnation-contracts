@@ -168,25 +168,25 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     )
         internal
     {
-        super._preValidatePurchase(_beneficiary, _weiAmount);
+        super._preValidatePurchase(_beneficiary, _weiAmount, _tokenAmount);
         require(milestones[currentMilestoneIdx].tokensSold.add(_tokenAmount) <= milestones[currentMilestoneIdx].cap, "The current purchase exceeds the Hard Cap of current Milestone.");
     }
 
     /**
-    * @dev Extend parent behavior updating contract variables
-    * @param _beneficiary Address performing the token purchase
-    * @param _weiAmount Value in wei involved in the purchase
+    * @dev Extend parent behavior to update current milestone state and index
+    * @param _beneficiary Token purchaser
+    * @param _weiAmount Amount of wei contributed
     * @param _tokenAmount Amount of token purchased
     */
-    function _postValidatePurchase(
+    function _updatePurchasingState(
         address _beneficiary,
         uint256 _weiAmount,
         uint256 _tokenAmount
     )
         internal
     {
-        super._postValidatePurchase(_beneficiary, _weiAmount);
-        milestones[currentMilestoneIdx].tokensSold = milestones[currentMilestoneIdx].tokensSold.add(tokens);
+        super._updatePurchasingState(_beneficiary, _weiAmount, _tokenAmount);
+        milestones[currentMilestoneIdx].tokensSold = milestones[currentMilestoneIdx].tokensSold.add(_tokenAmount);
         currentMilestoneIdx = getCurrentMilestoneIndex();
     }
 
@@ -195,7 +195,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     * @return The current price or 0 if we are outside milestone period
     */
     function getCurrentRate() internal view returns (uint result) {
-        return milestones[currentMilestoneIdx()].rate;
+        return milestones[currentMilestoneIdx].rate;
     }
 
     /**

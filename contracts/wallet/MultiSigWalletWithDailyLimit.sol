@@ -1,8 +1,9 @@
-pragma solidity 0.4.24;
 /**
  * Originally from https://github.com/ConsenSys/MultiSigWallet
  * Updated Version for solidity 0.4.24
  */
+
+pragma solidity 0.4.24;
 
 import "./MultiSigWallet.sol";
 

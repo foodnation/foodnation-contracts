@@ -1,10 +1,9 @@
-var FoodNationToken = artifacts.require("./FoodNationToken.sol");
-var VestingFactory = artifacts.require("./VestingFactory.sol");
-var ETHUSDPricing = artifacts.require("./VestingFactory.sol");
+var contract = require('truffle-contract');
 
-var GnosisWallet = artifacts.require("./GnosisWallet.sol");
-
-var PreSale = artifacts.require("./PreSale.sol");
+var FoodNationTokenJson = require("build/contracts/FoodNationToken.json");
+var GnosisWalletJson = require("build/contracts/GnosisWallet.json");
+var PreSaleJson = require("build/contracts/PreSale.json");
+var FVestingTokenJson = require("build/contracts/VestingToken.json");
 
 var nikola_wallet_address = '0x9c78aaec0be3d9ffd55bb0b6b7c61f69c2128a95';
 var neo_wallet_address = '0x91c2d785a28181b15decf26d9be812b0f7259a32';
@@ -40,6 +39,7 @@ function Reserved(address, amount) {
 
 module.exports = async function (deployer, network, accounts) {
     // Deploy FoodNation Token
+    var FoodNationTokenContract = contract(FoodNationTokenJson);
     await deployer.deploy(FoodNationToken, "FoodNation Token", "FOOD", 18, tokencap);
     const deployedToken = await FoodNationToken.deployed();
     console.log(deployedToken.address);

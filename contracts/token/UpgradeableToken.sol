@@ -8,8 +8,8 @@ pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
-import "./Recoverable.sol";
-import "./UpgradeAgent.sol";
+import "../upgrade/Recoverable.sol";
+import "../upgrade/UpgradeAgent.sol";
 
 /**
  * A token upgrade mechanism where users can opt-in amount of tokens to the next smart contract revision.

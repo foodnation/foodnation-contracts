@@ -3,15 +3,19 @@ pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 import "./crowdsale/Crowdsale.sol";
-import "./crowdsale/emission/AllowanceCrowdsale.sol";
+import "./crowdsale/emission/MintedCrowdsale.sol";
 import "./crowdsale/distribution/RefundableCrowdsale.sol";
 import "./crowdsale/validation/CappedCrowdsaleToken.sol";
 import "./crowdsale/validation/MinimumPurchaseCrowdsale.sol";
 import "./crowdsale/validation/MilestoneCrowdsale.sol";
 import "./crowdsale/price/USDPriceCrowdsale.sol";
+import "./FoodNationToken.sol";
 
+interface FoodNationTokenERC20 {
+    function heartbeat() public;
+}
 
-contract PreSale is Crowdsale, AllowanceCrowdsale, RefundableCrowdsale, CappedCrowdsaleToken, MinimumPurchaseCrowdsale, MilestoneCrowdsale, USDPriceCrowdsale {
+contract PreSale is Crowdsale, MintedCrowdsale, RefundableCrowdsale, CappedCrowdsaleToken, MinimumPurchaseCrowdsale, MilestoneCrowdsale, USDPriceCrowdsale {
 
     constructor(
         uint256 _rate,
@@ -24,17 +28,16 @@ contract PreSale is Crowdsale, AllowanceCrowdsale, RefundableCrowdsale, CappedCr
         uint256[] _milestoneRate,
         uint256 _goal,
         uint256 _cap,
-        uint256 _minimumContribution,
-        address _tokenWallet
+        uint256 _minimumContribution
     )
         Crowdsale(_rate, _wallet, _token)
-        AllowanceCrowdsale(_tokenWallet)
         RefundableCrowdsale(_goal)
         CappedCrowdsaleToken(_cap)
         MinimumPurchaseCrowdsale(_minimumContribution)
         MilestoneCrowdsale(_openingTime, _closingTime, _milestoneStartTime, _milestoneCap, _milestoneRate)
         public
     {
+        token = _token;
     }
 
     /**
@@ -47,4 +50,37 @@ contract PreSale is Crowdsale, AllowanceCrowdsale, RefundableCrowdsale, CappedCr
     {
         return _getPrice(_weiAmount).div(getCurrentRate());
     }
+
+    /**
+    * @dev Extend parent behavior sending heartbeat to token.
+    * @param _beneficiary Address receiving the tokens
+    * @param _weiAmount Value in wei involved in the purchase
+    * @param _tokenAmount Value in token involved in the purchase
+    */
+    function _updatePurchasingState(
+        address _beneficiary,
+        uint256 _weiAmount,
+        uint256 _tokenAmount
+    )
+        internal
+    {
+        super._updatePurchasingState(_beneficiary, _weiAmount, _tokenAmount);
+        FoodNationTokenERC20 foodNationToken = FoodNationTokenERC20(token);
+        foodNationToken.heartbeat();
+    }
+
+    /**
+    * @dev Must be called after crowdsale ends, to do some extra finalization
+    * work. Calls the contract's finalization function.
+    */
+    function finalize() public onlyOwner {
+        require(!isFinalized);
+        require(hasClosed() || capReached());
+
+        finalization();
+        emit Finalized();
+
+        isFinalized = true;
+    }
+
 }

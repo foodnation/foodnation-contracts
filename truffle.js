@@ -30,7 +30,8 @@ module.exports = {
         development: {
             host: 'localhost',
             port: 8545,
-            network_id: '*'
+            network_id: '*',
+            gasPrice: 100000000000
         },
         mainet: {
             provider: infuraProvider,
@@ -41,19 +42,19 @@ module.exports = {
             provider: infuraProvider('ropsten'),
             port: 443,
             network_id: 3,
-            gasPrice: 1000000000
+            gasPrice: 100000000000
         },
         kovan: {
             provider: infuraProvider('kovan'),
             port: 443,
             network_id: 42,
-            gasPrice: 1000000000
+            gasPrice: 100000000000
         },
         rinkeby: {
             provider: infuraProvider('rinkeby'),
             port: 443,
             network_id: "4",
-            gasPrice: 1000000000
+            gasPrice: 100000000000
         }
     },
     solc: {

@@ -22,8 +22,8 @@ contract FoodNationToken is StandardToken, MintableToken, CappedToken, DetailedE
         uint256 _heartbeatTimeout
     )
         DetailedERC20(_name, _symbol, _decimals)
-        CappedToken(_cap * (10 ** uint256(_decimals)))
-        ReservableToken(_addrs, _amounts, uint256(_decimals))
+        CappedToken(_cap)
+        ReservableToken(_addrs, _amounts)
         Heritable(_heartbeatTimeout)
         public
     {

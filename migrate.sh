@@ -19,6 +19,4 @@ truffle compile
 
 truffle migrate --reset
 
-
-
-
+/bin/bash ./flatten.sh

@@ -21,22 +21,17 @@ contract ReservableToken is MintableToken {
     uint256 public reservedTokensDestinationsLen = 0;
     bool reservedTokensDestinationsAreSet = false;
 
-    uint256 decimalPlaces;
-
     //state variables for reserved token distribution
     bool reservedTokensAreDistributed = false;
     uint256 public distributedReservedTokensDestinationsLen = 0;
 
     constructor(
         address[] addrs, 
-        uint256[] amounts,
-        uint256 _decimals
+        uint256[] amounts
     ) 
         public 
     {
-        decimalPlaces = _decimals;
         setReservedTokensListMultiple(addrs, amounts);
-        distributeReservedTokens();
     }
 
     function isAddressReserved(address addr) public view returns (bool isReserved) {
@@ -51,33 +46,8 @@ contract ReservableToken is MintableToken {
         return reservedTokensList[addr].amount;
     }
 
-    function setReservedTokensListMultiple(address[] addrs, uint256[] amounts) internal canMint onlyOwner {
-        require(!reservedTokensDestinationsAreSet, "Reserved Tokens already set");
-        require(addrs.length == amounts.length, "Parameters must have the same length");
-        for (uint iterator = 0; iterator < addrs.length; iterator++) {
-            if (addrs[iterator] != address(0)) {
-                setReservedTokensList(addrs[iterator], amounts[iterator]);
-            }
-        }
-        reservedTokensDestinationsAreSet = true;
-    }
-
-    function setReservedTokensList(address addr, uint256 amount) internal canMint onlyOwner {
-        assert(addr != address(0));
-        if (!isAddressReserved(addr)) {
-            reservedTokensDestinations.push(addr);
-            reservedTokensDestinationsLen++;
-        }
-
-        reservedTokensList[addr] = ReservedTokensData({
-            amount: amount * (10 ** decimalPlaces),
-            isReserved: true,
-            isDistributed: false
-        });
-    }
-
     /// distributes reserved tokens
-    function distributeReservedTokens() internal canMint onlyOwner {
+    function distributeReservedTokens() public canMint onlyOwner returns (bool){
         assert(!reservedTokensAreDistributed);
         assert(distributedReservedTokensDestinationsLen < reservedTokensDestinationsLen);
 
@@ -104,6 +74,32 @@ contract ReservableToken is MintableToken {
         if (distributedReservedTokensDestinationsLen == reservedTokensDestinationsLen) {
             reservedTokensAreDistributed = true;
         }
+        return true;
+    }
+
+    function setReservedTokensListMultiple(address[] addrs, uint256[] amounts) internal canMint onlyOwner {
+        require(!reservedTokensDestinationsAreSet, "Reserved Tokens already set");
+        require(addrs.length == amounts.length, "Parameters must have the same length");
+        for (uint iterator = 0; iterator < addrs.length; iterator++) {
+            if (addrs[iterator] != address(0)) {
+                setReservedTokensList(addrs[iterator], amounts[iterator]);
+            }
+        }
+        reservedTokensDestinationsAreSet = true;
+    }
+
+    function setReservedTokensList(address addr, uint256 amount) internal canMint onlyOwner {
+        assert(addr != address(0));
+        if (!isAddressReserved(addr)) {
+            reservedTokensDestinations.push(addr);
+            reservedTokensDestinationsLen++;
+        }
+
+        reservedTokensList[addr] = ReservedTokensData({
+            amount: amount,
+            isReserved: true,
+            isDistributed: false
+        });
     }
 
     function finalizeReservedAddress(address addr) internal onlyOwner {

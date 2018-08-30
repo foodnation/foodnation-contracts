@@ -1,21 +1,41 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/payment/RefundEscrow.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 import "./crowdsale/Crowdsale.sol";
-import "./crowdsale/emission/MintedCrowdsale.sol";
-import "./crowdsale/distribution/RefundableCrowdsale.sol";
-import "./crowdsale/validation/CappedCrowdsaleToken.sol";
-import "./crowdsale/validation/MinimumPurchaseCrowdsale.sol";
 import "./crowdsale/validation/MilestoneCrowdsale.sol";
-import "./crowdsale/price/USDPriceCrowdsale.sol";
-import "./FoodNationToken.sol";
+import "./crowdsale/price/USDPriceStrategy.sol";
 
-interface FoodNationTokenERC20 {
+
+interface HeartbeatERC20 {
     function heartbeat() public;
 }
 
-contract PreSale is Crowdsale, MintedCrowdsale, RefundableCrowdsale, CappedCrowdsaleToken, MinimumPurchaseCrowdsale, MilestoneCrowdsale, USDPriceCrowdsale {
+interface MintableERC20 {
+    function mint(address _to, uint256 _amount) public returns (bool);
+}
+
+contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
+    using SafeMath for uint256;
+
+    /// Max amount of tokens to be contributed
+    uint256 public cap;
+
+    /// Minimum amount of wei per contribution
+    uint256 public minimumContribution;
+
+    // minimum amount of funds to be raised in weis
+    uint256 public goal;
+
+    // refund escrow used to hold funds while crowdsale is running
+    RefundEscrow private escrow;
+
+    bool public isFinalized = false;
+
+    event Finalized();
 
     constructor(
         uint256 _rate,
@@ -23,21 +43,64 @@ contract PreSale is Crowdsale, MintedCrowdsale, RefundableCrowdsale, CappedCrowd
         ERC20 _token,
         uint256 _openingTime,
         uint256 _closingTime,
-        uint256[] _milestoneStartTime, 
-        uint256[] _milestoneCap, 
-        uint256[] _milestoneRate,
         uint256 _goal,
         uint256 _cap,
         uint256 _minimumContribution
     )
         Crowdsale(_rate, _wallet, _token)
-        RefundableCrowdsale(_goal)
-        CappedCrowdsaleToken(_cap)
-        MinimumPurchaseCrowdsale(_minimumContribution)
-        MilestoneCrowdsale(_openingTime, _closingTime, _milestoneStartTime, _milestoneCap, _milestoneRate)
+        MilestoneCrowdsale(_openingTime, _closingTime)
         public
-    {
-        token = _token;
+    {  
+        require(_cap > 0);
+        require(_minimumContribution > 0);
+        require(_goal > 0);
+        
+        cap = _cap;
+        minimumContribution = _minimumContribution;
+
+        escrow = new RefundEscrow(wallet);
+        goal = _goal;
+    }
+
+
+    /**
+    * @dev Checks whether the cap has been reached.
+    * @return Whether the cap was reached
+    */
+    function capReached() public view returns (bool) {
+        return tokensSold >= cap;
+    }
+
+    /**
+    * @dev Investors can claim refunds here if crowdsale is unsuccessful
+    */
+    function claimRefund() public {
+        require(isFinalized);
+        require(!goalReached());
+
+        escrow.withdraw(msg.sender);
+    }
+
+    /**
+    * @dev Checks whether funding goal was reached.
+    * @return Whether funding goal was reached
+    */
+    function goalReached() public view returns (bool) {
+        return tokensSold >= goal;
+    }
+
+    /**
+    * @dev Must be called after crowdsale ends, to do some extra finalization
+    * work. Calls the contract's finalization function.
+    */
+    function finalize() public onlyOwner {
+        require(!isFinalized);
+        require(goalReached() || hasClosed());
+
+        finalization();
+        emit Finalized();
+
+        isFinalized = true;
     }
 
     /**
@@ -48,7 +111,7 @@ contract PreSale is Crowdsale, MintedCrowdsale, RefundableCrowdsale, CappedCrowd
     function _getTokenAmount(uint256 _weiAmount)
         internal view returns (uint256)
     {
-        return _getPrice(_weiAmount).div(getCurrentRate());
+        return getPrice(_weiAmount).div(getCurrentRate());
     }
 
     /**
@@ -65,22 +128,61 @@ contract PreSale is Crowdsale, MintedCrowdsale, RefundableCrowdsale, CappedCrowd
         internal
     {
         super._updatePurchasingState(_beneficiary, _weiAmount, _tokenAmount);
-        FoodNationTokenERC20 foodNationToken = FoodNationTokenERC20(token);
-        foodNationToken.heartbeat();
+        HeartbeatERC20 heartbeatToken = HeartbeatERC20(token);
+        heartbeatToken.heartbeat();
+    }
+    
+    /**
+    * @dev Overrides delivery by minting tokens upon purchase. - MINTED Crowdsale
+    * @param _beneficiary Token purchaser
+    * @param _tokenAmount Number of tokens to be minted
+    */
+    function _deliverTokens(
+        address _beneficiary,
+        uint256 _tokenAmount
+    )
+        internal
+    {
+        // Potentially dangerous assumption about the type of the token.
+        require(MintableERC20(address(token)).mint(_beneficiary, _tokenAmount));
+    }
+
+
+    /**
+    * @dev Extend parent behavior requiring purchase to respect the funding cap.
+    * @param _beneficiary Token purchaser
+    * @param _weiAmount Amount of wei contributed
+    * @param _tokenAmount Amount of token purchased
+    */
+    function _preValidatePurchase(
+        address _beneficiary,
+        uint256 _weiAmount,
+        uint256 _tokenAmount
+    )
+        internal
+    {
+        super._preValidatePurchase(_beneficiary, _weiAmount, _tokenAmount);
+        require(_weiAmount >= minimumContribution);
+        require(tokensSold.add(_tokenAmount) <= cap);
     }
 
     /**
-    * @dev Must be called after crowdsale ends, to do some extra finalization
-    * work. Calls the contract's finalization function.
+    * @dev escrow finalization task, called when owner calls finalize()
     */
-    function finalize() public onlyOwner {
-        require(!isFinalized);
-        require(hasClosed() || capReached());
+    function finalization() internal {
+        if (goalReached()) {
+            escrow.close();
+            escrow.beneficiaryWithdraw();
+        } else {
+            escrow.enableRefunds();
+        }
+    }
 
-        finalization();
-        emit Finalized();
-
-        isFinalized = true;
+    /**
+    * @dev Overrides Crowdsale fund forwarding, sending funds to escrow.
+    */
+    function _forwardFunds() internal {
+        escrow.deposit.value(msg.value)(msg.sender);
     }
 
 }

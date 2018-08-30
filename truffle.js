@@ -31,7 +31,8 @@ module.exports = {
             host: 'localhost',
             port: 8545,
             network_id: '*',
-            gasPrice: 100000000000
+            gas: 7500000,
+            gasPrice: 5000000000
         },
         mainet: {
             provider: infuraProvider,
@@ -42,19 +43,20 @@ module.exports = {
             provider: infuraProvider('ropsten'),
             port: 443,
             network_id: 3,
-            gasPrice: 100000000000
+            gasPrice: 5000000000
         },
         kovan: {
             provider: infuraProvider('kovan'),
             port: 443,
             network_id: 42,
-            gasPrice: 100000000000
+            gasPrice: 5000000000
+
         },
         rinkeby: {
             provider: infuraProvider('rinkeby'),
             port: 443,
             network_id: "4",
-            gasPrice: 100000000000
+            gasPrice: 5000000000
         }
     },
     solc: {
@@ -62,5 +64,15 @@ module.exports = {
             enabled: true,
             runs: 200
         }
+    },
+    mocha: {
+        reporter: 'eth-gas-reporter',
+        reporterOptions: {
+            outputFile: './gas-reporter.txt',
+            onlyCalledMethods: true,
+            currency: 'USD',
+            gasPrice: 21
+        },
+        useColors: true
     }
 };

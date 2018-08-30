@@ -48,31 +48,37 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     // Index of the current milestone
     uint256 public currentMilestoneIdx = 0;
 
+
+    bool public milestoningFinished = false;
+
+    constructor(        
+        uint256 _openingTime,
+        uint256 _closingTime
+        ) 
+        TimedCrowdsale(_openingTime, _closingTime)
+        public 
+        {
+        }
+
     /**
-    * @dev Contruction, creating a list of milestones
-    * @param _openingTime Crowdsale opening time
-    * @param _closingTime Crowdsale closing time
+    * @dev Contruction, setting a list of milestones
     * @param _milestoneStartTime uint[] milestones start time 
     * @param _milestoneCap uint[] milestones cap 
     * @param _milestoneRate uint[] milestones price 
     */
-    constructor(        
-        uint256 _openingTime,
-        uint256 _closingTime, 
-        uint256[] _milestoneStartTime, 
-        uint256[] _milestoneCap, 
-        uint256[] _milestoneRate) 
-        TimedCrowdsale(_openingTime, _closingTime)
-        public {
+    function setMilestonesList(uint256[] _milestoneStartTime, uint256[] _milestoneCap, uint256[] _milestoneRate) public {
         // Need to have tuples, length check
-        require(_milestoneStartTime.length > 0, "Parameters length must be non-zero");
-        require(_milestoneStartTime.length == _milestoneCap.length && _milestoneCap.length == _milestoneRate.length, "Parameters must have the same length");
-        require(_milestoneStartTime[0] == _openingTime, "First Milestone should start at same time as global Crowdsale");
-        require(_milestoneStartTime[_milestoneStartTime.length-1] < _closingTime, "Last Milestone should start before global Crowdsale ends");
+        require(!milestoningFinished);
+        require(_milestoneStartTime.length > 0);
+        require(_milestoneStartTime.length == _milestoneCap.length && _milestoneCap.length == _milestoneRate.length);
+        require(_milestoneStartTime[0] == openingTime);
+        require(_milestoneStartTime[_milestoneStartTime.length-1] < closingTime);
 
         for (uint iterator = 0; iterator < _milestoneStartTime.length; iterator++) {
             if (_milestoneStartTime[iterator] != 0) {
-                assert(_milestoneStartTime[iterator] > milestones[milestoneCount-1].startTime);
+                if (iterator > 0) {
+                    assert(_milestoneStartTime[iterator] > milestones[milestoneCount-1].startTime);
+                }
                 milestones[milestoneCount] = Milestone({
                     index: milestoneCount,
                     startTime: _milestoneStartTime[iterator],
@@ -83,6 +89,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
                 milestoneCount++;
             }
         }
+        milestoningFinished = true;
     }
 
     /**
@@ -169,7 +176,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         internal
     {
         super._preValidatePurchase(_beneficiary, _weiAmount, _tokenAmount);
-        require(milestones[currentMilestoneIdx].tokensSold.add(_tokenAmount) <= milestones[currentMilestoneIdx].cap, "The current purchase exceeds the Hard Cap of current Milestone.");
+        require(milestones[currentMilestoneIdx].tokensSold.add(_tokenAmount) <= milestones[currentMilestoneIdx].cap);
     }
 
     /**

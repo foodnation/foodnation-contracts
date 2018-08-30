@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 
-rm -rf flats/*
-./node_modules/.bin/truffle-flattener contracts/FoodNationToken.sol > flats/FoodNationToken_flat.sol
+parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+cd "$parent_path"
 
-./node_modules/.bin/truffle-flattener contracts/GnosisWallet.sol > flats/GnosisWallet_flat.sol
+rm -rf flats
+mkdir flats
 
-./node_modules/.bin/truffle-flattener contracts/GnosisWalletDailyLimit.sol > flats/GnosisWalletDailyLimit_flat.sol
+truffle-flattener contracts/FoodNationToken.sol > flats/FoodNationToken_flat.sol
 
-./node_modules/.bin/truffle-flattener contracts/PreSale.sol > flats/PreSale_flat.sol
+truffle-flattener contracts/GnosisWallet.sol > flats/GnosisWallet_flat.sol
 
-./node_modules/.bin/truffle-flattener contracts/VestingToken.sol > flats/VestingToken_flat.sol
+truffle-flattener contracts/GnosisWalletDailyLimit.sol > flats/GnosisWalletDailyLimit_flat.sol
+
+truffle-flattener contracts/PreSale.sol > flats/PreSale_flat.sol
+
+truffle-flattener contracts/VestingToken.sol > flats/VestingToken_flat.sol

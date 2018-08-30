@@ -1,15 +1,17 @@
 pragma solidity ^0.4.22;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../Crowdsale.sol";
 /**
-* @title USDPricerowdsale
+* @title USDPriceStrategy
 * @dev Extension of Crowdsale contract that calculates the price of tokens in USD cents.
 * Note that this contracts needs to be updated
 * Once this contract is used, the rate of crowdsale needs to be in USD cents
 */
-contract USDPriceCrowdsale is Ownable, Crowdsale {
+contract USDPriceStrategy is Ownable {
+
+    using SafeMath for uint256;
 
     // PRICE of 1 ETHER in USD in cents
     // So, if price is: $271.90, the value in variable will be: 27190
@@ -26,13 +28,15 @@ contract USDPriceCrowdsale is Ownable, Crowdsale {
     constructor() public {
     }
 
-    function getPrice(uint256 time) public view returns (uint256 price) {
+    function getHistoricPrice(uint256 time) public view returns (uint256 price) {
         return priceHistory[time];
     } 
 
-    function updatePrice(uint256 time, uint256 price) public onlyOwner {
-        require(time > updatedTime, "Time must be greater than last update");
-        require(price > 0, "ETHUSD price is non-zero");
+    function updatePrice(uint256 price) public onlyOwner {
+        require(price > 0);
+        
+        // solium-disable-next-line security/no-block-members
+        uint256 time = block.timestamp; 
 
         priceHistory[updatedTime] = ETHUSD;
 
@@ -47,23 +51,11 @@ contract USDPriceCrowdsale is Ownable, Crowdsale {
     * @param _weiAmount Value in wei to be converted into tokens
     * @return The value of wei amount in USD cents
     */
-    function _getPrice(uint256 _weiAmount)
+    function getPrice(uint256 _weiAmount)
         internal view returns (uint256)
     {
         return _weiAmount.mul(ETHUSD);
     }
-
-    /**
-    * @dev Override to extend the way in which ether is converted to tokens.
-    * @param _weiAmount Value in wei to be converted into tokens
-    * @return Number of tokens that can be purchased with the specified _weiAmount
-    */
-    function _getTokenAmount(uint256 _weiAmount)
-        internal view returns (uint256)
-    {
-        return _getPrice(_weiAmount).div(rate);
-    }
-
     
 }
 

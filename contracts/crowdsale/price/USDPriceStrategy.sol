@@ -28,20 +28,18 @@ contract USDPriceStrategy is Ownable {
     constructor() public {
     }
 
-    function getHistoricPrice(uint256 time) public view returns (uint256 price) {
+    function getHistoricPrice(uint256 time) public view returns (uint256) {
         return priceHistory[time];
     } 
 
     function updatePrice(uint256 price) public onlyOwner {
         require(price > 0);
-        
-        // solium-disable-next-line security/no-block-members
-        uint256 time = block.timestamp; 
 
         priceHistory[updatedTime] = ETHUSD;
 
         ETHUSD = price;
-        updatedTime = time;
+        // solium-disable-next-line security/no-block-members
+        updatedTime = block.timestamp;
 
         emit PriceUpdated(ETHUSD);
     }

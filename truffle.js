@@ -68,8 +68,6 @@ module.exports = {
     mocha: {
         reporter: 'eth-gas-reporter',
         reporterOptions: {
-            outputFile: './gas-reporter.txt',
-            onlyCalledMethods: true,
             currency: 'USD',
             gasPrice: 21
         },

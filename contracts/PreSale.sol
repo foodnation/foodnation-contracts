@@ -9,11 +9,6 @@ import "./crowdsale/Crowdsale.sol";
 import "./crowdsale/validation/MilestoneCrowdsale.sol";
 import "./crowdsale/price/USDPriceStrategy.sol";
 
-
-interface HeartbeatERC20 {
-    function heartbeat() public;
-}
-
 interface MintableERC20 {
     function mint(address _to, uint256 _amount) public returns (bool);
 }
@@ -128,8 +123,6 @@ contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
         internal
     {
         super._updatePurchasingState(_beneficiary, _weiAmount, _tokenAmount);
-        HeartbeatERC20 heartbeatToken = HeartbeatERC20(token);
-        heartbeatToken.heartbeat();
     }
     
     /**

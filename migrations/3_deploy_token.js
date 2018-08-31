@@ -34,8 +34,8 @@ function Reserved(address, amount) {
     this.amount = amount;
 }
 
-function deployToken(deployer, token, name, tick, addrs, amounts, heartbeat) {
-    return deployer.deploy(token, name, tick, decimals, tokencap, addrs, amounts, heartbeat);
+function deployToken(deployer, token, name, tick, addrs, amounts) {
+    return deployer.deploy(token, name, tick, decimals, tokencap, addrs, amounts);
 }
 
 module.exports = function (deployer) {
@@ -62,11 +62,10 @@ module.exports = function (deployer) {
 
     console.log("Creating Token...");
 
-    deployToken(deployer, FoodNationToken, "FoodNation Token", "FOOD", addrs, amounts, duration.days(2))
+    deployToken(deployer, FoodNationToken, "FoodNation Token", "FOOD", addrs, amounts)
         .then((deployedToken) => {
             console.log("Token Created...");
             deployedToken.distributeReservedTokens();
             console.log("Reserved Tokens Distributed...");
-            deployedToken.setHeir(nikola_dev_wallet);
         });
 }

@@ -27,7 +27,7 @@ module.exports = function (deployer) {
     const constantRate = 10; // 0,10 USD;
 
     const presale_openingTime = Math.floor(new Date(2018, 8, 21, 0, 0, 0, 0) / 1000);
-    const presale_closingTime = Math.floor(new Date(2018, 11, 20, 23, 59, 59, 59) / 1000);
+    const presale_closingTime = Math.floor(new Date(2018, 11, 21, 0, 0, 0, 0) / 1000);
 
     deployedSalesWallet = SalesGnosisDailyLimitWallet;
     console.log("Sales wallet address: " + deployedSalesWallet.address);
@@ -76,10 +76,8 @@ module.exports = function (deployer) {
             console.log("USD price set");
 
             var FNToken = await FoodNationToken.deployed();
-            if (FNToken.owner != deployedCrowdsale.address) {
-                await FNToken.transferOwnership(deployedCrowdsale.address);
-            }
-            console.log("Ownership transferred");
+            await FNToken.transferOwnership(deployedCrowdsale.address);
+            console.log("Ownership transferred to crowdsale");
 
             return true;
         });

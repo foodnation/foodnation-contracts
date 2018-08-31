@@ -45,9 +45,6 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     // How many active milestones have been created
     uint256 public milestoneCount = 0;
 
-    // Index of the current milestone
-    uint256 public currentMilestoneIdx = 0;
-
 
     bool public milestoningFinished = false;
 
@@ -75,19 +72,17 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         require(_milestoneStartTime[_milestoneStartTime.length-1] < closingTime);
 
         for (uint iterator = 0; iterator < _milestoneStartTime.length; iterator++) {
-            if (_milestoneStartTime[iterator] != 0) {
-                if (iterator > 0) {
-                    assert(_milestoneStartTime[iterator] > milestones[milestoneCount-1].startTime);
-                }
-                milestones[milestoneCount] = Milestone({
-                    index: milestoneCount,
-                    startTime: _milestoneStartTime[iterator],
-                    tokensSold: 0,
-                    cap: _milestoneCap[iterator],
-                    rate: _milestoneRate[iterator]
-                });
-                milestoneCount++;
+            if (iterator > 0) {
+                assert(_milestoneStartTime[iterator] > milestones[iterator-1].startTime);
             }
+            milestones[iterator] = Milestone({
+                index: iterator,
+                startTime: _milestoneStartTime[iterator],
+                tokensSold: 0,
+                cap: _milestoneCap[iterator],
+                rate: _milestoneRate[iterator]
+            });
+            milestoneCount++;
         }
         milestoningFinished = true;
     }
@@ -176,7 +171,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         internal
     {
         super._preValidatePurchase(_beneficiary, _weiAmount, _tokenAmount);
-        require(milestones[currentMilestoneIdx].tokensSold.add(_tokenAmount) <= milestones[currentMilestoneIdx].cap);
+        require(milestones[getCurrentMilestoneIndex()].tokensSold.add(_tokenAmount) <= milestones[getCurrentMilestoneIndex()].cap);
     }
 
     /**
@@ -193,8 +188,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         internal
     {
         super._updatePurchasingState(_beneficiary, _weiAmount, _tokenAmount);
-        milestones[currentMilestoneIdx].tokensSold = milestones[currentMilestoneIdx].tokensSold.add(_tokenAmount);
-        currentMilestoneIdx = getCurrentMilestoneIndex();
+        milestones[getCurrentMilestoneIndex()].tokensSold = milestones[getCurrentMilestoneIndex()].tokensSold.add(_tokenAmount);
     }
 
     /**
@@ -202,7 +196,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     * @return The current price or 0 if we are outside milestone period
     */
     function getCurrentRate() internal view returns (uint result) {
-        return milestones[currentMilestoneIdx].rate;
+        return milestones[getCurrentMilestoneIndex()].rate;
     }
 
     /**

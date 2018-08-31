@@ -541,126 +541,220 @@ contract PausableToken is StandardToken, Pausable {
   }
 }
 
-// File: openzeppelin-solidity/contracts/ownership/Heritable.sol
+// File: openzeppelin-solidity/contracts/access/rbac/Roles.sol
 
 /**
- * @title Heritable
- * @dev The Heritable contract provides ownership transfer capabilities, in the
- * case that the current owner stops "heartbeating". Only the heir can pronounce the
- * owner's death.
+ * @title Roles
+ * @author Francisco Giordano (@frangio)
+ * @dev Library for managing addresses assigned to a Role.
+ * See RBAC.sol for example usage.
  */
-contract Heritable is Ownable {
-  address private heir_;
-
-  // Time window the owner has to notify they are alive.
-  uint256 private heartbeatTimeout_;
-
-  // Timestamp of the owner's death, as pronounced by the heir.
-  uint256 private timeOfDeath_;
-
-  event HeirChanged(address indexed owner, address indexed newHeir);
-  event OwnerHeartbeated(address indexed owner);
-  event OwnerProclaimedDead(
-    address indexed owner,
-    address indexed heir,
-    uint256 timeOfDeath
-  );
-  event HeirOwnershipClaimed(
-    address indexed previousOwner,
-    address indexed newOwner
-  );
-
+library Roles {
+  struct Role {
+    mapping (address => bool) bearer;
+  }
 
   /**
-   * @dev Throw an exception if called by any account other than the heir's.
+   * @dev give an address access to this role
    */
-  modifier onlyHeir() {
-    require(msg.sender == heir_);
+  function add(Role storage _role, address _addr)
+    internal
+  {
+    _role.bearer[_addr] = true;
+  }
+
+  /**
+   * @dev remove an address' access to this role
+   */
+  function remove(Role storage _role, address _addr)
+    internal
+  {
+    _role.bearer[_addr] = false;
+  }
+
+  /**
+   * @dev check if an address has this role
+   * // reverts
+   */
+  function check(Role storage _role, address _addr)
+    internal
+    view
+  {
+    require(has(_role, _addr));
+  }
+
+  /**
+   * @dev check if an address has this role
+   * @return bool
+   */
+  function has(Role storage _role, address _addr)
+    internal
+    view
+    returns (bool)
+  {
+    return _role.bearer[_addr];
+  }
+}
+
+// File: openzeppelin-solidity/contracts/access/rbac/RBAC.sol
+
+/**
+ * @title RBAC (Role-Based Access Control)
+ * @author Matt Condon (@Shrugs)
+ * @dev Stores and provides setters and getters for roles and addresses.
+ * Supports unlimited numbers of roles and addresses.
+ * See //contracts/mocks/RBACMock.sol for an example of usage.
+ * This RBAC method uses strings to key roles. It may be beneficial
+ * for you to write your own implementation of this interface using Enums or similar.
+ */
+contract RBAC {
+  using Roles for Roles.Role;
+
+  mapping (string => Roles.Role) private roles;
+
+  event RoleAdded(address indexed operator, string role);
+  event RoleRemoved(address indexed operator, string role);
+
+  /**
+   * @dev reverts if addr does not have role
+   * @param _operator address
+   * @param _role the name of the role
+   * // reverts
+   */
+  function checkRole(address _operator, string _role)
+    public
+    view
+  {
+    roles[_role].check(_operator);
+  }
+
+  /**
+   * @dev determine if addr has role
+   * @param _operator address
+   * @param _role the name of the role
+   * @return bool
+   */
+  function hasRole(address _operator, string _role)
+    public
+    view
+    returns (bool)
+  {
+    return roles[_role].has(_operator);
+  }
+
+  /**
+   * @dev add a role to an address
+   * @param _operator address
+   * @param _role the name of the role
+   */
+  function addRole(address _operator, string _role)
+    internal
+  {
+    roles[_role].add(_operator);
+    emit RoleAdded(_operator, _role);
+  }
+
+  /**
+   * @dev remove a role from an address
+   * @param _operator address
+   * @param _role the name of the role
+   */
+  function removeRole(address _operator, string _role)
+    internal
+  {
+    roles[_role].remove(_operator);
+    emit RoleRemoved(_operator, _role);
+  }
+
+  /**
+   * @dev modifier to scope access to a single role (uses msg.sender as addr)
+   * @param _role the name of the role
+   * // reverts
+   */
+  modifier onlyRole(string _role)
+  {
+    checkRole(msg.sender, _role);
     _;
   }
 
-
   /**
-   * @notice Create a new Heritable Contract with heir address 0x0.
-   * @param _heartbeatTimeout time available for the owner to notify they are alive,
-   * before the heir can take ownership.
+   * @dev modifier to scope access to a set of roles (uses msg.sender as addr)
+   * @param _roles the names of the roles to scope access to
+   * // reverts
+   *
+   * @TODO - when solidity supports dynamic arrays as arguments to modifiers, provide this
+   *  see: https://github.com/ethereum/solidity/issues/2467
    */
-  constructor(uint256 _heartbeatTimeout) public {
-    setHeartbeatTimeout(_heartbeatTimeout);
-  }
+  // modifier onlyRoles(string[] _roles) {
+  //     bool hasAnyRole = false;
+  //     for (uint8 i = 0; i < _roles.length; i++) {
+  //         if (hasRole(msg.sender, _roles[i])) {
+  //             hasAnyRole = true;
+  //             break;
+  //         }
+  //     }
 
-  function setHeir(address _newHeir) public onlyOwner {
-    require(_newHeir != owner);
-    heartbeat();
-    emit HeirChanged(owner, _newHeir);
-    heir_ = _newHeir;
-  }
+  //     require(hasAnyRole);
 
-  /**
-   * @dev Use these getter functions to access the internal variables in
-   * an inherited contract.
-   */
-  function heir() public view returns(address) {
-    return heir_;
-  }
+  //     _;
+  // }
+}
 
-  function heartbeatTimeout() public view returns(uint256) {
-    return heartbeatTimeout_;
-  }
+// File: openzeppelin-solidity/contracts/ownership/Superuser.sol
 
-  function timeOfDeath() public view returns(uint256) {
-    return timeOfDeath_;
-  }
+/**
+ * @title Superuser
+ * @dev The Superuser contract defines a single superuser who can transfer the ownership
+ * of a contract to a new address, even if he is not the owner.
+ * A superuser can transfer his role to a new address.
+ */
+contract Superuser is Ownable, RBAC {
+  string public constant ROLE_SUPERUSER = "superuser";
 
-  /**
-   * @dev set heir = 0x0
-   */
-  function removeHeir() public onlyOwner {
-    heartbeat();
-    heir_ = address(0);
+  constructor () public {
+    addRole(msg.sender, ROLE_SUPERUSER);
   }
 
   /**
-   * @dev Heir can pronounce the owners death. To claim the ownership, they will
-   * have to wait for `heartbeatTimeout` seconds.
+   * @dev Throws if called by any account that's not a superuser.
    */
-  function proclaimDeath() public onlyHeir {
-    require(ownerLives());
-    emit OwnerProclaimedDead(owner, heir_, timeOfDeath_);
-    // solium-disable-next-line security/no-block-members
-    timeOfDeath_ = block.timestamp;
+  modifier onlySuperuser() {
+    checkRole(msg.sender, ROLE_SUPERUSER);
+    _;
+  }
+
+  modifier onlyOwnerOrSuperuser() {
+    require(msg.sender == owner || isSuperuser(msg.sender));
+    _;
   }
 
   /**
-   * @dev Owner can send a heartbeat if they were mistakenly pronounced dead.
+   * @dev getter to determine if address has superuser role
    */
-  function heartbeat() public onlyOwner {
-    emit OwnerHeartbeated(owner);
-    timeOfDeath_ = 0;
-  }
-
-  /**
-   * @dev Allows heir to transfer ownership only if heartbeat has timed out.
-   */
-  function claimHeirOwnership() public onlyHeir {
-    require(!ownerLives());
-    // solium-disable-next-line security/no-block-members
-    require(block.timestamp >= timeOfDeath_ + heartbeatTimeout_);
-    emit OwnershipTransferred(owner, heir_);
-    emit HeirOwnershipClaimed(owner, heir_);
-    owner = heir_;
-    timeOfDeath_ = 0;
-  }
-
-  function setHeartbeatTimeout(uint256 _newHeartbeatTimeout)
-    internal onlyOwner
+  function isSuperuser(address _addr)
+    public
+    view
+    returns (bool)
   {
-    require(ownerLives());
-    heartbeatTimeout_ = _newHeartbeatTimeout;
+    return hasRole(_addr, ROLE_SUPERUSER);
   }
 
-  function ownerLives() internal view returns (bool) {
-    return timeOfDeath_ == 0;
+  /**
+   * @dev Allows the current superuser to transfer his role to a newSuperuser.
+   * @param _newSuperuser The address to transfer ownership to.
+   */
+  function transferSuperuser(address _newSuperuser) public onlySuperuser {
+    require(_newSuperuser != address(0));
+    removeRole(msg.sender, ROLE_SUPERUSER);
+    addRole(_newSuperuser, ROLE_SUPERUSER);
+  }
+
+  /**
+   * @dev Allows the current superuser or owner to transfer control of the contract to a newOwner.
+   * @param _newOwner The address to transfer ownership to.
+   */
+  function transferOwnership(address _newOwner) public onlyOwnerOrSuperuser {
+    _transferOwnership(_newOwner);
   }
 }
 
@@ -961,7 +1055,7 @@ contract ReservableToken is MintableToken {
 
 // File: contracts/FoodNationToken.sol
 
-contract FoodNationToken is StandardToken, MintableToken, CappedToken, DetailedERC20, PausableToken, UpgradeableToken, ReservableToken, Heritable {
+contract FoodNationToken is StandardToken, MintableToken, CappedToken, DetailedERC20, PausableToken, UpgradeableToken, ReservableToken, Superuser {
 
     constructor(
         string _name, 
@@ -969,13 +1063,11 @@ contract FoodNationToken is StandardToken, MintableToken, CappedToken, DetailedE
         uint8 _decimals, 
         uint256 _cap, 
         address[] _addrs, 
-        uint256[] _amounts, 
-        uint256 _heartbeatTimeout
+        uint256[] _amounts
     )
         DetailedERC20(_name, _symbol, _decimals)
         CappedToken(_cap)
         ReservableToken(_addrs, _amounts)
-        Heritable(_heartbeatTimeout)
         public
     {
 

@@ -648,9 +648,6 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     // How many active milestones have been created
     uint256 public milestoneCount = 0;
 
-    // Index of the current milestone
-    uint256 public currentMilestoneIdx = 0;
-
 
     bool public milestoningFinished = false;
 
@@ -678,19 +675,17 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         require(_milestoneStartTime[_milestoneStartTime.length-1] < closingTime);
 
         for (uint iterator = 0; iterator < _milestoneStartTime.length; iterator++) {
-            if (_milestoneStartTime[iterator] != 0) {
-                if (iterator > 0) {
-                    assert(_milestoneStartTime[iterator] > milestones[milestoneCount-1].startTime);
-                }
-                milestones[milestoneCount] = Milestone({
-                    index: milestoneCount,
-                    startTime: _milestoneStartTime[iterator],
-                    tokensSold: 0,
-                    cap: _milestoneCap[iterator],
-                    rate: _milestoneRate[iterator]
-                });
-                milestoneCount++;
+            if (iterator > 0) {
+                assert(_milestoneStartTime[iterator] > milestones[iterator-1].startTime);
             }
+            milestones[iterator] = Milestone({
+                index: iterator,
+                startTime: _milestoneStartTime[iterator],
+                tokensSold: 0,
+                cap: _milestoneCap[iterator],
+                rate: _milestoneRate[iterator]
+            });
+            milestoneCount++;
         }
         milestoningFinished = true;
     }
@@ -779,7 +774,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         internal
     {
         super._preValidatePurchase(_beneficiary, _weiAmount, _tokenAmount);
-        require(milestones[currentMilestoneIdx].tokensSold.add(_tokenAmount) <= milestones[currentMilestoneIdx].cap);
+        require(milestones[getCurrentMilestoneIndex()].tokensSold.add(_tokenAmount) <= milestones[getCurrentMilestoneIndex()].cap);
     }
 
     /**
@@ -796,8 +791,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
         internal
     {
         super._updatePurchasingState(_beneficiary, _weiAmount, _tokenAmount);
-        milestones[currentMilestoneIdx].tokensSold = milestones[currentMilestoneIdx].tokensSold.add(_tokenAmount);
-        currentMilestoneIdx = getCurrentMilestoneIndex();
+        milestones[getCurrentMilestoneIndex()].tokensSold = milestones[getCurrentMilestoneIndex()].tokensSold.add(_tokenAmount);
     }
 
     /**
@@ -805,7 +799,7 @@ contract MilestoneCrowdsale is TimedCrowdsale {
     * @return The current price or 0 if we are outside milestone period
     */
     function getCurrentRate() internal view returns (uint result) {
-        return milestones[currentMilestoneIdx].rate;
+        return milestones[getCurrentMilestoneIndex()].rate;
     }
 
     /**
@@ -821,15 +815,14 @@ contract MilestoneCrowdsale is TimedCrowdsale {
 
 }
 
-// File: contracts/crowdsale/price/USDPriceStrategy.sol
+// File: contracts/price/USDPrice.sol
 
 /**
-* @title USDPriceStrategy
-* @dev Extension of Crowdsale contract that calculates the price of tokens in USD cents.
+* @title USDPrice
+* @dev Contract that calculates the price of tokens in USD cents.
 * Note that this contracts needs to be updated
-* Once this contract is used, the rate of crowdsale needs to be in USD cents
 */
-contract USDPriceStrategy is Ownable {
+contract USDPrice is Ownable {
 
     using SafeMath for uint256;
 
@@ -848,20 +841,18 @@ contract USDPriceStrategy is Ownable {
     constructor() public {
     }
 
-    function getPrice(uint256 time) public view returns (uint256 price) {
+    function getHistoricPrice(uint256 time) public view returns (uint256) {
         return priceHistory[time];
     } 
 
     function updatePrice(uint256 price) public onlyOwner {
         require(price > 0);
-        
-        // solium-disable-next-line security/no-block-members
-        uint256 time = block.timestamp; 
 
         priceHistory[updatedTime] = ETHUSD;
 
         ETHUSD = price;
-        updatedTime = time;
+        // solium-disable-next-line security/no-block-members
+        updatedTime = block.timestamp;
 
         emit PriceUpdated(ETHUSD);
     }
@@ -871,8 +862,8 @@ contract USDPriceStrategy is Ownable {
     * @param _weiAmount Value in wei to be converted into tokens
     * @return The value of wei amount in USD cents
     */
-    function _getPrice(uint256 _weiAmount)
-        internal view returns (uint256)
+    function getPrice(uint256 _weiAmount)
+        public view returns (uint256)
     {
         return _weiAmount.mul(ETHUSD);
     }
@@ -881,15 +872,11 @@ contract USDPriceStrategy is Ownable {
 
 // File: contracts/PreSale.sol
 
-interface HeartbeatERC20 {
-    function heartbeat() public;
-}
-
 interface MintableERC20 {
     function mint(address _to, uint256 _amount) public returns (bool);
 }
 
-contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
+contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale {
     using SafeMath for uint256;
 
     /// Max amount of tokens to be contributed
@@ -900,11 +887,13 @@ contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
 
     // minimum amount of funds to be raised in weis
     uint256 public goal;
+    
+    bool public isFinalized = false;
 
     // refund escrow used to hold funds while crowdsale is running
     RefundEscrow private escrow;
 
-    bool public isFinalized = false;
+    USDPrice private usdPrice; 
 
     event Finalized();
 
@@ -916,7 +905,8 @@ contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
         uint256 _closingTime,
         uint256 _goal,
         uint256 _cap,
-        uint256 _minimumContribution
+        uint256 _minimumContribution,
+        USDPrice _usdPrice
     )
         Crowdsale(_rate, _wallet, _token)
         MilestoneCrowdsale(_openingTime, _closingTime)
@@ -931,6 +921,7 @@ contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
 
         escrow = new RefundEscrow(wallet);
         goal = _goal;
+        usdPrice = _usdPrice;
     }
 
 
@@ -982,7 +973,7 @@ contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
     function _getTokenAmount(uint256 _weiAmount)
         internal view returns (uint256)
     {
-        return _getPrice(_weiAmount).div(getCurrentRate());
+        return usdPrice.getPrice(_weiAmount).div(getCurrentRate());
     }
 
     /**
@@ -999,8 +990,6 @@ contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
         internal
     {
         super._updatePurchasingState(_beneficiary, _weiAmount, _tokenAmount);
-        HeartbeatERC20 heartbeatToken = HeartbeatERC20(token);
-        heartbeatToken.heartbeat();
     }
     
     /**

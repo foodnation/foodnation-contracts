@@ -1,4 +1,6 @@
 var PreSale = artifacts.require("PreSale");
+var USDPrice = artifacts.require("USDPrice");
+
 const { assertRevert } = require('./helpers/assertRevert');
 const { ethGetBalance } = require('./helpers/web3');
 const { ether } = require('./helpers/ether');
@@ -27,6 +29,7 @@ contract('PreSale Test', function ([_, owner, wallet, investor, thirdparty]) {
     const value = ether(1);
     const goal = ether(90);
     const crowdsale = PreSale.at(PreSale.address);
+    const usdPrice = USDPrice.at(USDPrice.address);
 
     it('should reject payments before start', async () => {
         await increaseTimeTo(beforeOpeningTime);
@@ -44,8 +47,8 @@ contract('PreSale Test', function ([_, owner, wallet, investor, thirdparty]) {
     });
 
     it('should update the ETH USD value', async () => {
-        await crowdsale.updatePrice(30000);
-        var ETHUSD = await crowdsale.ETHUSD();
+        await usdPrice.updatePrice(30000);
+        var ETHUSD = await usdPrice.ETHUSD();
         assert.equal(ETHUSD, 30000, "The price wasn't updated correctly");
     });
 
@@ -60,7 +63,7 @@ contract('PreSale Test', function ([_, owner, wallet, investor, thirdparty]) {
 
     it('should convert to the right amount of food in first milestone', async () => {
         await increaseTimeTo(firstMilestone + duration.minutes(10));
-        await crowdsale.updatePrice(30000);
+        await usdPrice.updatePrice(30000);
         const { logs } = await crowdsale.buyTokens(investor, { value: value });
         const event = logs.find(e => e.event === 'TokenPurchase');
         should.exist(event);
@@ -69,7 +72,7 @@ contract('PreSale Test', function ([_, owner, wallet, investor, thirdparty]) {
 
     it('should convert to the right amount of food in second milestone', async () => {
         await increaseTimeTo(secondMilestone + duration.minutes(10));
-        await crowdsale.updatePrice(30000);
+        await usdPrice.updatePrice(30000);
         const { logs } = await crowdsale.buyTokens(investor, { value: value });
         const event = logs.find(e => e.event === 'TokenPurchase');
         should.exist(event);
@@ -78,7 +81,7 @@ contract('PreSale Test', function ([_, owner, wallet, investor, thirdparty]) {
 
     it('should convert to the right amount of food in third milestone', async () => {
         await increaseTimeTo(thirdMilestone + duration.minutes(10));
-        await crowdsale.updatePrice(30000);
+        await usdPrice.updatePrice(30000);
         const { logs } = await crowdsale.buyTokens(investor, { value: value });
         const event = logs.find(e => e.event === 'TokenPurchase');
         should.exist(event);
@@ -86,7 +89,7 @@ contract('PreSale Test', function ([_, owner, wallet, investor, thirdparty]) {
     });
 
     it('should reach goal', async () => {
-        await crowdsale.updatePrice(200000);
+        await usdPrice.updatePrice(200000);
         await crowdsale.buyTokens(investor, { value: goal });
         var reached = await crowdsale.goalReached();
         assert.equal(reached, true, "The goal wasn't reached");

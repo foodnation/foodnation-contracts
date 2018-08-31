@@ -35,28 +35,25 @@ module.exports = {
             gasPrice: 5000000000
         },
         mainet: {
-            provider: infuraProvider,
-            port: 443,
-            network_id: 1
+            provider: infuraProvider('mainet'),
+            network_id: '1',
+            gas: 2900000
         },
         ropsten: {
             provider: infuraProvider('ropsten'),
-            port: 443,
-            network_id: 3,
-            gasPrice: 5000000000
+            network_id: '3',
+            gas: 2900000
         },
         kovan: {
             provider: infuraProvider('kovan'),
-            port: 443,
-            network_id: 42,
-            gasPrice: 5000000000
+            network_id: '42',
+            gas: 2900000
 
         },
         rinkeby: {
             provider: infuraProvider('rinkeby'),
-            port: 443,
-            network_id: "4",
-            gasPrice: 5000000000
+            network_id: '4',
+            gas: 2900000
         }
     },
     solc: {

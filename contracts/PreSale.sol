@@ -7,13 +7,13 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 import "./crowdsale/Crowdsale.sol";
 import "./crowdsale/validation/MilestoneCrowdsale.sol";
-import "./crowdsale/price/USDPriceStrategy.sol";
+import "./price/USDPrice.sol";
 
 interface MintableERC20 {
     function mint(address _to, uint256 _amount) public returns (bool);
 }
 
-contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
+contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale {
     using SafeMath for uint256;
 
     /// Max amount of tokens to be contributed
@@ -24,11 +24,13 @@ contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
 
     // minimum amount of funds to be raised in weis
     uint256 public goal;
+    
+    bool public isFinalized = false;
 
     // refund escrow used to hold funds while crowdsale is running
     RefundEscrow private escrow;
 
-    bool public isFinalized = false;
+    USDPrice private usdPrice; 
 
     event Finalized();
 
@@ -40,7 +42,8 @@ contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
         uint256 _closingTime,
         uint256 _goal,
         uint256 _cap,
-        uint256 _minimumContribution
+        uint256 _minimumContribution,
+        USDPrice _usdPrice
     )
         Crowdsale(_rate, _wallet, _token)
         MilestoneCrowdsale(_openingTime, _closingTime)
@@ -55,6 +58,7 @@ contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
 
         escrow = new RefundEscrow(wallet);
         goal = _goal;
+        usdPrice = _usdPrice;
     }
 
 
@@ -106,7 +110,7 @@ contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale, USDPriceStrategy {
     function _getTokenAmount(uint256 _weiAmount)
         internal view returns (uint256)
     {
-        return getPrice(_weiAmount).div(getCurrentRate());
+        return usdPrice.getPrice(_weiAmount).div(getCurrentRate());
     }
 
     /**

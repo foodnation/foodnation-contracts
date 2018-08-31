@@ -1,18 +1,10 @@
 var FoodNationToken = artifacts.require("FoodNationToken");
 var PreSale = artifacts.require("PreSale");
+var USDPrice = artifacts.require("USDPrice");
 
 var SalesGnosisDailyLimitWallet = artifacts.require("SalesGnosisDailyLimitWallet");
 
 const decimals = 18;
-
-const duration = {
-    seconds: function (val) { return val; },
-    minutes: function (val) { return val * this.seconds(60); },
-    hours: function (val) { return val * this.minutes(60); },
-    days: function (val) { return val * this.hours(24); },
-    weeks: function (val) { return val * this.days(7); },
-    years: function (val) { return val * this.days(365); },
-};
 
 const units = {
     million: function (val) { return val * 1e6; },
@@ -38,6 +30,8 @@ module.exports = function (deployer) {
 
     const minimumContribution = web3.toWei(0.5, 'ether');
 
+    var usdPrice = USDPrice.at(USDPrice.address);
+
     console.log("Creating Pre Sale...");
     deployer.deploy(
         PreSale,
@@ -48,7 +42,8 @@ module.exports = function (deployer) {
         presale_closingTime,
         goal,
         cap,
-        minimumContribution
+        minimumContribution,
+        usdPrice.address
     )
         .then(async () => {
             deployedCrowdsale = await PreSale.deployed();
@@ -71,9 +66,6 @@ module.exports = function (deployer) {
 
             await deployedCrowdsale.setMilestonesList(milestoneStartTime, milestoneCap, milestoneRate);
             console.log("Milestones set");
-
-            await deployedCrowdsale.updatePrice(30000);
-            console.log("USD price set");
 
             var FNToken = await FoodNationToken.deployed();
             await FNToken.transferOwnership(deployedCrowdsale.address);

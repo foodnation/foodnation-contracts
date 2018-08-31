@@ -2,14 +2,13 @@ pragma solidity ^0.4.22;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../Crowdsale.sol";
+
 /**
-* @title USDPriceStrategy
-* @dev Extension of Crowdsale contract that calculates the price of tokens in USD cents.
+* @title USDPrice
+* @dev Contract that calculates the price of tokens in USD cents.
 * Note that this contracts needs to be updated
-* Once this contract is used, the rate of crowdsale needs to be in USD cents
 */
-contract USDPriceStrategy is Ownable {
+contract USDPrice is Ownable {
 
     using SafeMath for uint256;
 
@@ -50,7 +49,7 @@ contract USDPriceStrategy is Ownable {
     * @return The value of wei amount in USD cents
     */
     function getPrice(uint256 _weiAmount)
-        internal view returns (uint256)
+        public view returns (uint256)
     {
         return _weiAmount.mul(ETHUSD);
     }

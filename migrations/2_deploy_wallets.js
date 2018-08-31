@@ -9,8 +9,8 @@ var SalesGnosisDailyLimitWallet = artifacts.require("SalesGnosisDailyLimitWallet
 var NikolaVestingToken = artifacts.require("NikolaVestingToken");
 var NeoVestingToken = artifacts.require("NeoVestingToken");
 
-var nikola_hot_wallet = '0x9c78aaec0be3d9ffd55bb0b6b7c61f69c2128a95';
-var neo_hot_wallet = '0x91c2d785a28181b15decf26d9be812b0f7259a32';
+var nikola_hot_wallet = '0x52fce231de2e94bbc5f0f7e4e75e916b27939fc3';
+var neo_hot_wallet = '0x91C2d785a28181B15decf26D9be812B0f7259A32';
 
 var nikola_cold_wallet = '0xC3c52ee3C5CE608377401522174FcD35CD1e54df';
 var neo_cold_wallet = '0x22E5FDD2Cad32296986BC97f01e2406e08206676';

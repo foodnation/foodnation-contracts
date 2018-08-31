@@ -37,23 +37,23 @@ module.exports = {
         mainet: {
             provider: infuraProvider('mainet'),
             network_id: '1',
-            gas: 2900000
+            gas: 4500000
         },
         ropsten: {
             provider: infuraProvider('ropsten'),
             network_id: '3',
-            gas: 2900000
+            gas: 4500000
         },
         kovan: {
             provider: infuraProvider('kovan'),
             network_id: '42',
-            gas: 2900000
+            gas: 4500000
 
         },
         rinkeby: {
             provider: infuraProvider('rinkeby'),
             network_id: '4',
-            gas: 2900000
+            gas: 4500000
         }
     },
     solc: {

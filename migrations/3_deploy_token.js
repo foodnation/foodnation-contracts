@@ -9,8 +9,6 @@ var ReserveGnosisDailyLimitWallet = artifacts.require("ReserveGnosisDailyLimitWa
 var NikolaVestingToken = artifacts.require("NikolaVestingToken");
 var NeoVestingToken = artifacts.require("NeoVestingToken");
 
-var nikola_dev_wallet = '0xD89Fd61c4916e607823cD48d4f90F2A191F8e11c';
-
 const decimals = 18;
 
 const duration = {

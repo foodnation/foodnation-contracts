@@ -4,27 +4,39 @@ import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
+
+/**
+* @title ReservableToken
+* @dev An amount of token is reserved and allocated to reservedTokensList.
+*/
 contract ReservableToken is MintableToken {
 
     using SafeMath for uint256;
-    
-    //Reserved Tokens Data Structure
+  
     struct ReservedTokensData {
         uint256 amount;
         bool isReserved;
         bool isDistributed;
     }
 
-    //state variables for reserved token setting 
     mapping (address => ReservedTokensData) public reservedTokensList;
-    address[] public reservedTokensDestinations;
-    uint256 public reservedTokensDestinationsLen = 0;
-    bool reservedTokensDestinationsAreSet = false;
 
-    //state variables for reserved token distribution
-    bool reservedTokensAreDistributed = false;
+    address[] public reservedTokensDestinations;
+
+    uint256 public reservedTokensDestinationsLen = 0;
+
     uint256 public distributedReservedTokensDestinationsLen = 0;
 
+    bool reservedTokensDestinationsAreSet = false;
+
+    bool reservedTokensAreDistributed = false;
+
+
+    /**
+    * @dev Constructor, takes token reserved addresses and amounts.
+    * @param addrs Token reserverd adress list
+    * @param amounts Token reserverd amounts list
+    */
     constructor(
         address[] addrs, 
         uint256[] amounts
@@ -46,7 +58,10 @@ contract ReservableToken is MintableToken {
         return reservedTokensList[addr].amount;
     }
 
-    /// distributes reserved tokens
+    /**
+    * @dev distribute previous reserved tokens
+    * @return Boolean if everything is alright
+    */
     function distributeReservedTokens() public canMint onlyOwner returns (bool){
         assert(!reservedTokensAreDistributed);
         assert(distributedReservedTokensDestinationsLen < reservedTokensDestinationsLen);
@@ -77,6 +92,11 @@ contract ReservableToken is MintableToken {
         return true;
     }
 
+    /**
+    * @dev Set reserved addresses and its amounts in batch
+    * @param address Addresses list to reserve tokens
+    * @param amounts Amount reserved list to address
+    */
     function setReservedTokensListMultiple(address[] addrs, uint256[] amounts) internal canMint onlyOwner {
         require(!reservedTokensDestinationsAreSet, "Reserved Tokens already set");
         require(addrs.length == amounts.length, "Parameters must have the same length");
@@ -88,6 +108,11 @@ contract ReservableToken is MintableToken {
         reservedTokensDestinationsAreSet = true;
     }
 
+    /**
+    * @dev Set reserved address and its amount
+    * @param addr Address to reserve tokens
+    * @param amount Amount reserved to address
+    */
     function setReservedTokensList(address addr, uint256 amount) internal canMint onlyOwner {
         assert(addr != address(0));
         if (!isAddressReserved(addr)) {

@@ -11,19 +11,22 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 contract Recoverable is Ownable {
 
-    /// @dev Empty constructor (for now)
     constructor() public{
     }
 
-    /// @dev This will be invoked by the owner, when owner wants to rescue tokens
-    /// @param token Token which will we rescue to the owner from the contract
+    /** 
+    * @dev This will be invoked by the owner, when owner wants to rescue tokens
+    * @param token Token which will we rescue to the owner from the contract
+    */
     function recoverTokens(ERC20Basic token) public onlyOwner  {
         token.transfer(owner, tokensToBeReturned(token));
     }
 
-    /// @dev Interface function, can be overwritten by the superclass
-    /// @param token Token which balance we will check and return
-    /// @return The amount of tokens (in smallest denominator) the contract owns
+    /** 
+    * @dev Interface function, can be overwritten by the superclass
+    * @param token Token which balance we will check and return
+    * @return The amount of tokens (in smallest denominator) the contract owns
+    */
     function tokensToBeReturned(ERC20Basic token) public view returns (uint) {
         return token.balanceOf(this);
     }

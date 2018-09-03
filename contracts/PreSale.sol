@@ -13,6 +13,13 @@ interface MintableERC20 {
     function mint(address _to, uint256 _amount) public returns (bool);
 }
 
+/**
+ * @title PreSale
+ * @dev Crowdsale accepting contributions only within a time frame, 
+ * having milestones defined, the price is defined in USD
+ * having a mechanism to refund sales if soft cap not capReached();
+ * And an escrow to support the refund.
+ */
 contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale {
     using SafeMath for uint256;
 
@@ -22,12 +29,12 @@ contract PreSale is Ownable, Crowdsale, MilestoneCrowdsale {
     /// Minimum amount of wei per contribution
     uint256 public minimumContribution;
 
-    // minimum amount of funds to be raised in weis
+    /// minimum amount of funds to be raised in weis
     uint256 public goal;
     
     bool public isFinalized = false;
 
-    // refund escrow used to hold funds while crowdsale is running
+    /// refund escrow used to hold funds while crowdsale is running
     RefundEscrow private escrow;
 
     USDPrice private usdPrice; 

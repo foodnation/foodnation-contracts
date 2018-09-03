@@ -61,9 +61,9 @@ module.exports = function (deployer) {
     console.log("Creating Token...");
 
     deployToken(deployer, FoodNationToken, "FoodNation Token", "FOOD", addrs, amounts)
-        .then((deployedToken) => {
+        .then(async (deployedToken) => {
             console.log("Token Created...:" + deployedToken.address);
-            deployedToken.distributeReservedTokens();
-            console.log("Reserved Tokens Distributed...");
+            var distributed = await deployedToken.distributeReservedTokens();
+            console.log("Reserved Tokens Distributed...: " + distributed);
         });
 }

@@ -34,26 +34,28 @@ module.exports = {
             gas: 7500000,
             gasPrice: 5000000000
         },
-        mainet: {
-            provider: infuraProvider('mainet'),
+        mainnet: {
+            provider: infuraProvider('mainnet'),
             network_id: '1',
-            gas: 4500000
+            gas: 4712388,
+            gasPrice: 20000000000
         },
         ropsten: {
             provider: infuraProvider('ropsten'),
             network_id: '3',
-            gas: 4500000
+            gas: 4712388,
+            gasPrice: 20000000000
         },
         kovan: {
             provider: infuraProvider('kovan'),
             network_id: '42',
-            gas: 4500000
+            gas: 4712388
 
         },
         rinkeby: {
             provider: infuraProvider('rinkeby'),
             network_id: '4',
-            gas: 4500000
+            gas: 4712388
         }
     },
     solc: {

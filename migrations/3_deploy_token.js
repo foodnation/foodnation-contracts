@@ -62,7 +62,7 @@ module.exports = function (deployer) {
 
     deployToken(deployer, FoodNationToken, "FoodNation Token", "FOOD", addrs, amounts)
         .then((deployedToken) => {
-            console.log("Token Created...");
+            console.log("Token Created...:" + deployedToken.address);
             deployedToken.distributeReservedTokens();
             console.log("Reserved Tokens Distributed...");
         });

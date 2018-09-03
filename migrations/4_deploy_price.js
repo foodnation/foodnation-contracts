@@ -4,7 +4,7 @@ module.exports = function (deployer) {
 
     deployer.deploy(USDPrice)
         .then(async (usdPriceDeployed) => {
-            console.log("USD Price deployed...");
+            console.log("USD Price deployed...:" + usdPriceDeployed.address);
 
             await usdPriceDeployed.updatePrice(30000);
             console.log("USD price set");

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 // File: contracts/wallet/MultiSigWallet.sol
 
@@ -7,7 +7,7 @@ pragma solidity ^0.4.22;
  * Updated Version for solidity 0.4.24
  */
 
-pragma solidity 0.4.24;
+pragma solidity ^0.4.24;
 
 /// @title Multisignature wallet - Allows multiple parties to agree on transactions before execution.
 /// @author Stefan George - <stefan.george@consensys.net>
@@ -371,7 +371,7 @@ contract MultiSigWallet {
  * Updated Version for solidity 0.4.24
  */
 
-pragma solidity 0.4.24;
+pragma solidity ^0.4.24;
 
 
 /// @title Multisignature wallet with daily limit - Allows an owner to withdraw a daily limit without multisig.

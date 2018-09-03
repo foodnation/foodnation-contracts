@@ -45,9 +45,10 @@ module.exports = function (deployer) {
         minimumContribution,
         usdPrice.address
     )
-        .then(async () => {
-            deployedCrowdsale = await PreSale.deployed();
+        .then(async (deployedCrowdsale) => {
+            console.log("Pre Sale deployed...:" + deployedCrowdsale.address);
             deployedSalesWallet = await SalesGnosisDailyLimitWallet.deployed();
+
 
             var milestoneStartTime = [];
             milestoneStartTime.push(Math.floor(new Date(2018, 8, 21, 0, 0, 0, 0) / 1000));

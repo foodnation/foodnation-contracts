@@ -20,3 +20,7 @@ truffle compile
 truffle migrate --reset
 
 /bin/bash ./flatten.sh
+
+/bin/bash ./new_instance.sh TimelockToken FelipeTimelockToken
+
+/bin/bash ./new_instance.sh TimelockToken VitorTimelockToken

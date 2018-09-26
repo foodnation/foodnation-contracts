@@ -17,3 +17,5 @@ truffle-flattener contracts/PreSale.sol > flats/PreSale_flat.sol
 truffle-flattener contracts/VestingToken.sol > flats/VestingToken_flat.sol
 
 truffle-flattener contracts/price/USDPrice.sol > flats/USDPrice_flat.sol
+
+truffle-flattener contracts/TimelockToken.sol > flats/TimelockToken_flat.sol

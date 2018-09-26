@@ -38,7 +38,7 @@ module.exports = {
             provider: infuraProvider('mainnet'),
             network_id: '1',
             gas: 4712388,
-            gasPrice: 20000000000
+            gasPrice: 10000000000
         },
         ropsten: {
             provider: infuraProvider('ropsten'),

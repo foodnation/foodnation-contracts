@@ -772,19 +772,22 @@ pragma solidity ^0.4.24;
 
 contract Recoverable is Ownable {
 
-    /// @dev Empty constructor (for now)
     constructor() public{
     }
 
-    /// @dev This will be invoked by the owner, when owner wants to rescue tokens
-    /// @param token Token which will we rescue to the owner from the contract
+    /** 
+    * @dev This will be invoked by the owner, when owner wants to rescue tokens
+    * @param token Token which will we rescue to the owner from the contract
+    */
     function recoverTokens(ERC20Basic token) public onlyOwner  {
         token.transfer(owner, tokensToBeReturned(token));
     }
 
-    /// @dev Interface function, can be overwritten by the superclass
-    /// @param token Token which balance we will check and return
-    /// @return The amount of tokens (in smallest denominator) the contract owns
+    /** 
+    * @dev Interface function, can be overwritten by the superclass
+    * @param token Token which balance we will check and return
+    * @return The amount of tokens (in smallest denominator) the contract owns
+    */
     function tokensToBeReturned(ERC20Basic token) public view returns (uint) {
         return token.balanceOf(this);
     }
@@ -949,27 +952,38 @@ contract UpgradeableToken is StandardToken, Recoverable {
 
 // File: contracts/token/ReservableToken.sol
 
+/**
+* @title ReservableToken
+* @dev An amount of token is reserved and allocated to reservedTokensList.
+*/
 contract ReservableToken is MintableToken {
 
     using SafeMath for uint256;
-    
-    //Reserved Tokens Data Structure
+  
     struct ReservedTokensData {
         uint256 amount;
         bool isReserved;
         bool isDistributed;
     }
 
-    //state variables for reserved token setting 
     mapping (address => ReservedTokensData) public reservedTokensList;
-    address[] public reservedTokensDestinations;
-    uint256 public reservedTokensDestinationsLen = 0;
-    bool reservedTokensDestinationsAreSet = false;
 
-    //state variables for reserved token distribution
-    bool reservedTokensAreDistributed = false;
+    address[] public reservedTokensDestinations;
+
+    uint256 public reservedTokensDestinationsLen = 0;
+
     uint256 public distributedReservedTokensDestinationsLen = 0;
 
+    bool reservedTokensDestinationsAreSet = false;
+
+    bool reservedTokensAreDistributed = false;
+
+
+    /**
+    * @dev Constructor, takes token reserved addresses and amounts.
+    * @param addrs Token reserverd adress list
+    * @param amounts Token reserverd amounts list
+    */
     constructor(
         address[] addrs, 
         uint256[] amounts
@@ -991,7 +1005,10 @@ contract ReservableToken is MintableToken {
         return reservedTokensList[addr].amount;
     }
 
-    /// distributes reserved tokens
+    /**
+    * @dev distribute previous reserved tokens
+    * @return Boolean if everything is alright
+    */
     function distributeReservedTokens() public canMint onlyOwner returns (bool){
         assert(!reservedTokensAreDistributed);
         assert(distributedReservedTokensDestinationsLen < reservedTokensDestinationsLen);
@@ -1022,6 +1039,11 @@ contract ReservableToken is MintableToken {
         return true;
     }
 
+    /**
+    * @dev Set reserved addresses and its amounts in batch
+    * @param addrs Addresses list to reserve tokens
+    * @param amounts Amount reserved list to address
+    */
     function setReservedTokensListMultiple(address[] addrs, uint256[] amounts) internal canMint onlyOwner {
         require(!reservedTokensDestinationsAreSet, "Reserved Tokens already set");
         require(addrs.length == amounts.length, "Parameters must have the same length");
@@ -1033,6 +1055,11 @@ contract ReservableToken is MintableToken {
         reservedTokensDestinationsAreSet = true;
     }
 
+    /**
+    * @dev Set reserved address and its amount
+    * @param addr Address to reserve tokens
+    * @param amount Amount reserved to address
+    */
     function setReservedTokensList(address addr, uint256 amount) internal canMint onlyOwner {
         assert(addr != address(0));
         if (!isAddressReserved(addr)) {
